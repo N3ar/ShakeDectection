@@ -67,6 +67,7 @@
         android:id="@+id/button_two"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignStart="@id/textView1"
         android:layout_alignLeft="@id/textView1"
         android:layout_below="@id/button_one"
         android:text="@string/button_two"

@@ -16,7 +16,11 @@ import android.hardware.SensorManager;
 import android.widget.Button;
 //import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.EditText;
 import android.widget.TextView;
+
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 //import android.widget.TextView;
 
 
@@ -26,6 +30,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SensorManager sensorManager;
     private AccelerationData data;
     private TextView accelValues, shakeOutput;
+    private EditText threshold;
+
 
 
     @Override
@@ -41,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         stop_btn = (Button) findViewById(R.id.button_two);
         accelValues = (TextView) findViewById(R.id.textView2);
         shakeOutput = (TextView) findViewById(R.id.textView4);
+        threshold = (EditText) findViewById(R.id.edit_message);
         start_btn.setOnClickListener(this);
         stop_btn.setOnClickListener(this);
         start_btn.setEnabled(true);
@@ -67,9 +74,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             // Check to see if there has been a change
             if (x != data.getX() || y != data.getY() || z != data.getZ()) {
-                // OUTPUT: SHAKE TextView4
-                shakeOutput.setText("SHAKE");
-
                 // Update data
                 data.setX(x);
                 data.setY(y);
@@ -77,6 +81,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 // Display Accel
                 accelValues.setText(data.toString());
+            }
+
+            // Update shake status if satisfactory
+            if (sqrt(pow(x,2)+pow(y,2)+pow(z,2))
+                    >= Integer.parseInt(threshold.getText().toString())) {
+                // OUTPUT: SHAKE TextView4
+                shakeOutput.setText("SHAKE");
             } else {
                 // OUTPUT: NO SHAKE TextView4
                 shakeOutput.setText("NO SHAKE");
@@ -109,11 +120,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.button_one:
+                threshold = (EditText) findViewById(R.id.edit_message);
+                if (Integer.parseInt(threshold.getText().toString()) < 8 ||
+                        Integer.parseInt(threshold.getText().toString()) > 25) {
+                    threshold.setText("Integers 8 to 25 only.");
+                    break;
+                }
                 start_btn.setEnabled(false);
                 stop_btn.setEnabled(true);
                 running = true;
                 Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-                sensorManager.registerListener(this, accelerometer, sensorManager.SENSOR_DELAY_FASTEST);
+                sensorManager.registerListener(this, accelerometer,
+                        sensorManager.SENSOR_DELAY_FASTEST);
                 break;
             case R.id.button_two:
                 start_btn.setEnabled(true);
