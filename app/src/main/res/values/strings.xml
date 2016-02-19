@@ -4,10 +4,14 @@
     <string name="edit_message">Number 8 - 25</string>
     <string name="button_one">Start</string>
     <string name="button_two">Stop</string>
+    <string name="button_three">Start</string>
+    <string name="button_four">Stop</string>
     <string name="textView1">The 3D acceleration values are:</string>
     <string name="textView2">N/A</string>
     <string name="textView3">The Shake Detector detects:</string>
     <string name="textView4">Please input a value between 8 and 25.</string>
+    <string name="textView5">The air pressure is currently:</string>
+    <string name="textView6">N/A</string>
     <string name="shake">SHAKE</string>
     <string name="noshake">NO SHAKE</string>
 </resources>

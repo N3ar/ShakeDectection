@@ -2,36 +2,31 @@ package com.example.james.a1shakedetector;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
-//import android.view.Menu;
-//import android.view.MenuItem;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.widget.Button;
-//import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
-//import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener, OnClickListener{
-    private Button start_btn, stop_btn;
-    private boolean running;
-    private SensorManager sensorManager;
+    private Button start_btn, stop_btn, b_start_btn;
+    private boolean running, b_running;
+    private SensorManager sensorManager, b_sensorManager;
     private AccelerationData data;
-    private TextView accelValues, shakeOutput;
+    private BarometricData pressure;
+    private TextView accelValues, shakeOutput, barValues;
     private EditText threshold;
-
+    private Sensor accelerometer, barometer;
 
 
     @Override
@@ -41,79 +36,90 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        b_sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        barometer = b_sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+
         data = new AccelerationData(0, 0, 0);
+        pressure = new BarometricData(0);
 
         start_btn = (Button) findViewById(R.id.button_one);
         stop_btn = (Button) findViewById(R.id.button_two);
+        b_start_btn = (Button) findViewById(R.id.button_three);
         accelValues = (TextView) findViewById(R.id.textView2);
         shakeOutput = (TextView) findViewById(R.id.textView4);
         threshold = (EditText) findViewById(R.id.edit_message);
+        barValues = (TextView) findViewById(R.id.textView6);
         start_btn.setOnClickListener(this);
         stop_btn.setOnClickListener(this);
         start_btn.setEnabled(true);
         stop_btn.setEnabled(false);
+        b_start_btn.setOnClickListener(this);
+        b_start_btn.setEnabled(true);
         accelValues.setText(data.toString());
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        barValues.setText(pressure.toString());
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        while(running) {
-            // Fetch new values
-            double x = event.values[0];
-            double y = event.values[1];
-            double z = event.values[2];
+        if(running) {
+            if (accelerometer.equals(event.sensor)) {
+                // Fetch new values
+                double ax = event.values[0];
+                double ay = event.values[1];
+                double az = event.values[2];
 
-            // Check to see if there has been a change
-            if (x != data.getX() || y != data.getY() || z != data.getZ()) {
-                // Update data
-                data.setX(x);
-                data.setY(y);
-                data.setZ(z);
+                // Check to see if there has been a change
+                if (ax != data.getX() || ay != data.getY() || az != data.getZ()) {
+                    // Update data
+                    data.setX(ax);
+                    data.setY(ay);
+                    data.setZ(az);
 
-                // Display Accel
-                accelValues.setText(data.toString());
+                    // Display Accel
+                    accelValues.setText(data.toString());
+                }
+
+                // Update shake status if satisfactory
+                if (sqrt(pow(ax, 2) + pow(ay, 2) + pow(az, 2))
+                        >= Integer.parseInt(threshold.getText().toString())) {
+                    // OUTPUT: SHAKE TextView4
+                    shakeOutput.setText("SHAKE");
+                } else {
+                    // OUTPUT: NO SHAKE TextView4
+                    shakeOutput.setText("NO SHAKE");
+                }
             }
+        }
 
-            // Update shake status if satisfactory
-            if (sqrt(pow(x,2)+pow(y,2)+pow(z,2))
-                    >= Integer.parseInt(threshold.getText().toString())) {
-                // OUTPUT: SHAKE TextView4
-                shakeOutput.setText("SHAKE");
-            } else {
-                // OUTPUT: NO SHAKE TextView4
-                shakeOutput.setText("NO SHAKE");
+        if (b_running) {
+            if (barometer.equals(event.sensor)) {
+                //Update
+                pressure.setP(event.values[0]);
 
+                // Display Pressure
+                barValues.setText(pressure.toString());
             }
         }
     }
 
-    /*
     @Override
     protected void onResume() {
         super.onResume();
-
+        sensorManager.registerListener(this, accelerometer, sensorManager.SENSOR_DELAY_FASTEST);
+        b_sensorManager.registerListener(this, barometer, b_sensorManager.SENSOR_DELAY_FASTEST);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
+        sensorManager.unregisterListener(this);
+        b_sensorManager.unregisterListener(this);
     }
-    */
 
     @Override
     public void onAccuracyChanged(Sensor event, int i) {
         //Do nothing
-
     }
 
     @Override
@@ -129,43 +135,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 start_btn.setEnabled(false);
                 stop_btn.setEnabled(true);
                 running = true;
-                Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
                 sensorManager.registerListener(this, accelerometer,
                         sensorManager.SENSOR_DELAY_FASTEST);
                 break;
             case R.id.button_two:
                 start_btn.setEnabled(true);
                 stop_btn.setEnabled(false);
-                running = true;
+                running = false;
                 sensorManager.unregisterListener(this);
-
                 break;
+            case R.id.button_three:
+//                b_start_btn.setEnabled(false);
+//                b_stop_btn.setEnabled(true);
+                b_running = true;
+                b_sensorManager.registerListener(this, barometer, b_sensorManager.SENSOR_DELAY_FASTEST);
+                break;
+//            case R.id.button_four:
+//                b_start_btn.setEnabled(true);
+//                b_stop_btn.setEnabled(false);
+//                b_running = false;
+//                b_sensorManager.unregisterListener(this);
+//                break;
             default:
                 break;
         }
-
     }
-    /*
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-    */
 }
